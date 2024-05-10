@@ -26,22 +26,23 @@ class DirectionalLight(LightSource):
 
     def __init__(self, intensity, direction):
         super().__init__(intensity)
-        # TODO
+        self.direction = np.array(direction)
+        self.direction = normalize(self.direction)
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection_point):
-        # TODO
-        return Ray()
+        new_ray = Ray(intersection_point, self.direction)
+        return new_ray
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
-        #TODO
-        pass
+        dis = np.inf
+        return dis
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
-        #TODO
-        pass
+        intensity = self.intensity
+        return intensity
 
 
 class PointLight(LightSource):
@@ -142,15 +143,46 @@ class Triangle(Object3D):
         self.b = np.array(b)
         self.c = np.array(c)
         self.normal = self.compute_normal()
+        
 
     # computes normal to the trainagle surface. Pay attention to its direction!
     def compute_normal(self):
-        # TODO
-        pass
-
+        AB = self.b - self.a
+        AC = self.c - self.a
+        normal = np.cross(AB, AC)
+        return normalize(normal)
+        
     def intersect(self, ray: Ray):
-        # TODO
-        pass
+        firts_edge = self.b - self.a
+        secomd_edge = self.c - self.a
+        h = np.cross(ray.direction, secomd_edge)
+        a = np.dot(firts_edge, h)
+
+        if a > -1e-6 and a < 1e-6:
+            return np.inf, None
+        
+        f = 1.0 / a
+        s = ray.origin - self.a
+        u = f * np.dot(s, h)
+
+        if u < 0 or u > 1:
+            return np.inf, None
+        q = np.cross(s, firts_edge)
+        v = f * np.dot(ray.direction, q)
+
+        if v < 0 or u + v > 1:
+            return np.inf, None
+        
+        t = f * np.dot(secomd_edge, q)
+        if t > 1e-6:
+            return t, self
+        else:
+            return np.inf, None
+        
+
+
+        
+        
 
 class Pyramid(Object3D):
     """     
@@ -182,6 +214,14 @@ A /&&&&&&&&&&&&&&&&&&&&\ B &&&/ C
         self.v_list = v_list
         self.triangle_list = self.create_triangle_list()
 
+
+    def set_material(self, ambient, diffuse, specular, shininess, reflection):
+        self.ambient = ambient
+        self.diffuse = diffuse
+        self.specular = specular
+        self.shininess = shininess
+        self.reflection = reflection
+
     def create_triangle_list(self):
         l = []
         t_idx = [
@@ -191,16 +231,26 @@ A /&&&&&&&&&&&&&&&&&&&&\ B &&&/ C
                  [4,1,0],
                  [4,2,1],
                  [2,4,0]]
-        # TODO
+        
+        l = [Triangle(self.v_list[i[0]], self.v_list[i[1]], self.v_list[i[2]]) for i in t_idx]
         return l
+        
 
     def apply_materials_to_triangles(self):
-        # TODO
-        pass
+        for t in self.triangle_list:
+            t.set_material(self.ambient, self.diffuse, self.specular, self.shininess, self.reflection)
+        
 
     def intersect(self, ray: Ray):
-        # TODO
-        pass
+        min_distance = np.inf
+        nearest_obj = None
+        for t in self.triangle_list:
+            distance, obj = t.intersect(ray)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_obj = obj
+        return min_distance, nearest_obj
+       
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
