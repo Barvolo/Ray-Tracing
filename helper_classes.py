@@ -9,9 +9,10 @@ def normalize(vector):
 # This function gets a vector and the normal of the surface it hit
 # This function returns the vector that reflects from the surface
 def reflected(vector, axis):
-    # TODO:
+    norm_axis = normalize(axis) 
     v = np.array([0,0,0])
-    return v
+    return vector - 2 * np.dot(vector, norm_axis) * norm_axis
+    
 
 ## Lights
 
@@ -92,10 +93,14 @@ class Ray:
     # The function is getting the collection of objects in the scene and looks for the one with minimum distance.
     # The function should return the nearest object and its distance (in two different arguments)
     def nearest_intersected_object(self, objects):
-        intersections = None
+        #intersections = None
         nearest_object = None
         min_distance = np.inf
-        #TODO
+        for obj in objects:
+            distance, obj = obj.intersect(self)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_object = obj
         return nearest_object, min_distance
 
 
@@ -104,7 +109,7 @@ class Object3D:
         self.ambient = ambient
         self.diffuse = diffuse
         self.specular = specular
-        self.shininess = shininess
+        self.shininess = shininess / 10
         self.reflection = reflection
 
 
@@ -119,7 +124,7 @@ class Plane(Object3D):
         if t > 0:
             return t, self
         else:
-            return None
+            return np.inf, None # check this
 
 
 class Triangle(Object3D):
