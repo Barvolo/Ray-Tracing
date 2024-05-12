@@ -26,8 +26,6 @@ def render_scene(camera, ambient, lights, objects, screen_size, max_depth):
 
 def calculate_color(ray, obj, distance, objects, lights, ambient, depth, level):
     color = np.zeros(3)
-    #print(isinstance(obj, Sphere))
-    #normal = obj.get_norm()
     if isinstance(obj, Sphere):
         normal = normalize((ray.origin + ray.direction * distance) - obj.center)
     else:
@@ -61,14 +59,47 @@ def calculate_color(ray, obj, distance, objects, lights, ambient, depth, level):
     return color
 
 
-
-    
-    
-
-# Write your own objects and lights
-# TODO
 def your_own_scene():
-    camera = np.array([0,0,1])
-    lights = []
-    objects = []
+    # Camera setup
+    camera = np.array([0, 0, 1])
+    
+    # Lighting setup
+    light_right = SpotLight(intensity= np.array([0.8, 1.2, 0.8]),position=np.array([2, 2, 2]), direction=([0,0,1]),
+                    kc=0.1,kl=0.1,kq=0.1)
+    light_left = PointLight(intensity=np.array([1.2, 0.8, 0.8]), position=np.array([-2, 2, 2]), kc=0.1, kl=0.05, kq=0.01)
+    #light_right = PointLight(intensity=np.array([0.8, 1.2, 0.8]), position=np.array([2, 2, 2]), kc=0.1, kl=0.05, kq=0.01)
+    
+    # Objects setup
+    # Main reflective sphere with high shininess to act as a central focal point
+    sphere_main = Sphere(np.array([0, -0.5, -3]), 1)
+    sphere_main.set_material(np.array([1, 1, 1]), np.array([1, 1, 1]), np.array([0.8, 0.8, 0.8]), 500, 0.9)
+
+    # Smaller colorful spheres
+    sphere_small1 = Sphere(np.array([1.5, 0, -2]), 0.3)
+    sphere_small1.set_material(np.array([0.9, 0.1, 0.1]), np.array([0.9, 0.1, 0.1]), np.array([0.6, 0.6, 0.6]), 300, 0.7)
+
+    sphere_small2 = Sphere(np.array([-1.5, 0, -2]), 0.3)
+    sphere_small2.set_material(np.array([0.1, 0.1, 0.9]), np.array([0.1, 0.1, 0.9]), np.array([0.6, 0.6, 0.6]), 300, 0.7)
+
+
+    
+    # Pyramid with defined vertices
+    v_list = np.array([
+        [0, 0, -3],     # Base center
+        [1, 0, -2],     # Front right
+        [-1, 0, -2],    # Front left
+        [0, 1, -2],     # Back middle
+        [0, 0.5, -1]    # Apex
+    ])
+    pyramid = Pyramid(v_list)
+    pyramid.set_material(np.array([0.5, 0.3, 0.7]), np.array([0.5, 0.3, 0.7]), np.array([0.5, 0.5, 0.5]), 100, 0.5)
+    pyramid.apply_materials_to_triangles()
+    # Ground plane with a subtle texture
+    plane = Plane(np.array([0, 1, 0]), np.array([0, -1.5, 0]))
+    plane.set_material(np.array([0.3, 0.3, 0.3]), np.array([0.3, 0.3, 0.3]), np.array([0.5, 0.5, 0.5]), 1000, 0.1)
+
+    # Collect lights and objects
+    lights = [light_left, light_right]
+    objects = [sphere_main, sphere_small1, sphere_small2, pyramid, plane]
+
     return camera, lights, objects

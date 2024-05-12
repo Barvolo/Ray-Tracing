@@ -72,7 +72,7 @@ class SpotLight(LightSource):
         super().__init__(intensity)
         self.position = np.array(position)
         self.direction = np.array(direction)
-        #self.direction = normalize(self.direction)
+        self.direction = normalize(self.direction)
         self.kc = kc
         self.kl = kl
         self.kq = kq
@@ -83,11 +83,25 @@ class SpotLight(LightSource):
         return Ray(intersection, normalize(self.position - intersection))
 
     def get_distance_from_light(self, intersection):
-        return np.linalg.norm(intersection - self.position)
+        return np.linalg.norm(self.position - intersection)
 
     def get_intensity(self, intersection):
-        d = self.get_distance_from_light(intersection)
-        return self.intensity / (self.kc + self.kl*d + self.kq * (d**2))
+        # Calculate the distance from the light source to the intersection
+        distance = self.get_distance_from_light(intersection)
+        # Distance attenuation factor
+        distance_attenuation = self.intensity / (self.kc + self.kl * distance + self.kq * distance**2)
+
+        # Check alignment of the light direction with the direction to the intersection
+        direction_to_intersection = normalize(intersection - self.position)
+        cos_theta = np.dot(-self.direction, direction_to_intersection)  # Negative because the light direction is outgoing
+
+        # Ensure the light only affects the scene if the intersection is in the general direction of the light
+        if cos_theta > 0:  
+            return self.intensity * distance_attenuation * cos_theta
+        else:
+            return 0
+
+        
         
 
 
