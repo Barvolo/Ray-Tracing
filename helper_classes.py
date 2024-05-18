@@ -26,12 +26,12 @@ class DirectionalLight(LightSource):
 
     def __init__(self, intensity, direction):
         super().__init__(intensity)
-        self.direction = np.array(direction)
-        self.direction = normalize(self.direction)
+        
+        self.direction = normalize(direction)
 
-    # This function returns the ray that goes from the light source to a point
+    # This function returns the ray that goes from a point to the light source
     def get_light_ray(self,intersection_point):
-        new_ray = Ray(intersection_point, self.direction)
+        new_ray = Ray(intersection_point, -self.direction)
         return new_ray
 
     # This function returns the distance from a point to the light source
@@ -41,8 +41,7 @@ class DirectionalLight(LightSource):
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
-        intensity = self.intensity
-        return intensity
+        return self.intensity
 
 
 class PointLight(LightSource):
@@ -72,14 +71,18 @@ class SpotLight(LightSource):
         super().__init__(intensity)
         self.position = np.array(position)
         self.direction = np.array(direction)
-        self.direction = normalize(self.direction)
+        #self.direction = normalize(self.direction)
         self.kc = kc
         self.kl = kl
         self.kq = kq
+        
 
 
-    # This function returns the ray that goes from the light source to a point
+    # This function returns the ray that goes from a point to the light source
     def get_light_ray(self, intersection):
+        
+        #print(type(self.direction))  # Should show <class 'numpy.ndarray'>
+
         return Ray(intersection, normalize(self.position - intersection))
 
     def get_distance_from_light(self, intersection):
@@ -92,9 +95,9 @@ class SpotLight(LightSource):
         distance_attenuation = self.intensity / (self.kc + self.kl * distance + self.kq * distance**2)
 
         # Check alignment of the light direction with the direction to the intersection
-        direction_to_intersection = normalize(intersection - self.position)
+        direction_to_intersection = normalize(self.get_light_ray(intersection).direction)
         cos_theta = np.dot(-self.direction, direction_to_intersection)  # Negative because the light direction is outgoing
-
+        return self.intensity * distance_attenuation * max(cos_theta,0)
         # Ensure the light only affects the scene if the intersection is in the general direction of the light
         if cos_theta > 0:  
             return self.intensity * distance_attenuation * cos_theta
@@ -129,7 +132,7 @@ class Object3D:
         self.ambient = ambient
         self.diffuse = diffuse
         self.specular = specular
-        self.shininess = shininess / 10
+        self.shininess = shininess 
         self.reflection = reflection
 
 
