@@ -98,11 +98,7 @@ class SpotLight(LightSource):
         direction_to_intersection = normalize(self.get_light_ray(intersection).direction)
         cos_theta = np.dot(-self.direction, direction_to_intersection)  # Negative because the light direction is outgoing
         return self.intensity * distance_attenuation * max(cos_theta,0)
-        # Ensure the light only affects the scene if the intersection is in the general direction of the light
-        if cos_theta > 0:  
-            return self.intensity * distance_attenuation * cos_theta
-        else:
-            return 0
+        
 
         
         
@@ -147,7 +143,7 @@ class Plane(Object3D):
         if t > 0:
             return t, self
         else:
-            return np.inf, None # check this
+            return np.inf, None 
 
 
 class Triangle(Object3D):
@@ -298,4 +294,74 @@ class Sphere(Object3D):
             if t0 < 0:
                 return np.inf, None
         return t0, self
+    
         
+
+
+class CustomTransparentSphere(Sphere):
+    def __init__(self, center, radius, ambient, diffuse, specular, shininess, reflection, refractive_index, transparency):
+        super().__init__(center, radius)
+        self.ambient = np.array(ambient)
+        self.diffuse = np.array(diffuse)
+        self.specular = np.array(specular)
+        self.shininess = shininess
+        self.reflection = reflection
+        self.refractive_index = refractive_index
+        self.transparency = transparency
+
+    def normal_at(self, point):
+        return normalize(point - self.center)
+
+    def calculate_refraction(self, incoming_ray, hit_point):
+        normal = self.normal_at(hit_point)
+        cos_theta_i = -np.dot(incoming_ray.direction, normal)
+        eta_i = 1.0  
+        eta_t = self.refractive_index
+
+        if cos_theta_i < 0:
+            normal = -normal
+            cos_theta_i = -cos_theta_i
+            eta_i, eta_t = eta_t, eta_i
+
+        eta = eta_i / eta_t
+        sin_theta_t2 = eta ** 2 * (1 - cos_theta_i ** 2)
+        if sin_theta_t2 > 1:
+            return None  
+
+        cos_theta_t = np.sqrt(1 - sin_theta_t2)
+        refracted_direction = eta * incoming_ray.direction + (eta * cos_theta_i - cos_theta_t) * normal
+        return Ray(hit_point - normal * 0.001, refracted_direction)  
+
+class CustomReflectivePolygon(Triangle):
+    def __init__(self, a, b, c, ambient, diffuse, specular, shininess, reflection, refractive_index, transparency):
+        super().__init__(a, b, c)
+        self.ambient = np.array(ambient)
+        self.diffuse = np.array(diffuse)
+        self.specular = np.array(specular)
+        self.shininess = shininess
+        self.reflection = reflection
+        self.refractive_index = refractive_index
+        self.transparency = transparency
+
+    def normal_at(self, point):
+        return self.normal  
+
+    def calculate_refraction(self, incoming_ray, hit_point):
+        normal = self.normal_at(hit_point)
+        cos_theta_i = -np.dot(incoming_ray.direction, normal)
+        eta_i = 1.0  
+        eta_t = self.refractive_index
+
+        if cos_theta_i < 0:
+            normal = -normal
+            cos_theta_i = -cos_theta_i
+            eta_i, eta_t = eta_t, eta_i
+
+        eta = eta_i / eta_t
+        sin_theta_t2 = eta ** 2 * (1 - cos_theta_i ** 2)
+        if sin_theta_t2 > 1:
+            return None  
+
+        cos_theta_t = np.sqrt(1 - sin_theta_t2)
+        refracted_direction = eta * incoming_ray.direction + (eta * cos_theta_i - cos_theta_t) * normal
+        return Ray(hit_point - normal * 0.001, refracted_direction)  
